@@ -115,7 +115,10 @@ status_led_state_t status_led_get(void) {
 
 void status_led_set_override(bool on) {
     atomic_set(&override_active, on ? 1 : 0);
-    if (!on) {
+    if (on) {
+        led_on();
+        k_wakeup(&status_led_thread_data);
+    } else {
         led_off();
     }
 }
