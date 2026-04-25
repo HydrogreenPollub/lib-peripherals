@@ -1,22 +1,8 @@
-//
-// Created by inż.Dawid Pisarczyk on 14.02.2026.
-//
-
 #include "uart.h"
 
+#include <zephyr/logging/log.h>
+
 LOG_MODULE_REGISTER(uart);
-
-int uart_rx_init(const struct device *dev, uint8_t *buf, size_t len, int32_t timeout) {
-    int ret;
-    ret = uart_rx_enable(dev, buf, len, timeout);
-
-    if (ret < 0) {
-        LOG_ERR("UART receiver not initialized");
-    } else if (ret == 0) {
-        LOG_INF("UART receiver configured succesfully");
-    }
-    return ret;
-}
 
 int uart_device_init(const struct device *dev) {
     if (!device_is_ready(dev)) {
@@ -27,13 +13,23 @@ int uart_device_init(const struct device *dev) {
     return 0;
 }
 
-int uart_callback_set_(const struct device *dev, uart_callback_t callback) {
-    int ret;
-    ret = uart_callback_set(dev, callback, NULL);
-
+int uart_rx_init(const struct device *dev, uint8_t *buf, size_t len,
+                 int32_t timeout) {
+    int ret = uart_rx_enable(dev, buf, len, timeout);
     if (ret < 0) {
-        LOG_ERR("UART callback not configured");
-    } else if (ret == 0) {
+        LOG_ERR("UART RX enable failed: %d", ret);
+    } else {
+        LOG_INF("UART RX enabled");
+    }
+    return ret;
+}
+
+int uart_callback_register(const struct device *dev, uart_callback_t callback,
+                           void *user_data) {
+    int ret = uart_callback_set(dev, callback, user_data);
+    if (ret < 0) {
+        LOG_ERR("UART callback set failed: %d", ret);
+    } else {
         LOG_INF("UART callback configured succesfully");
     }
     return ret;

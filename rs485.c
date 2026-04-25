@@ -46,7 +46,10 @@ static void rs485_uart_cb(const struct device *dev, struct uart_event *evt,
 
     case UART_RX_BUF_REQUEST: {
         uint8_t next = ctx->_rx_buf_idx ^ 1u;
-        uart_rx_buf_rsp(dev, ctx->_rx_buf[next], RS485_RX_BUF_SIZE);
+        int rsp_ret = uart_rx_buf_rsp(dev, ctx->_rx_buf[next], RS485_RX_BUF_SIZE);
+        if (rsp_ret != 0) {
+            LOG_ERR("uart_rx_buf_rsp failed (%d) — DMA ping-pong broken", rsp_ret);
+        }
         break;
     }
 
@@ -54,11 +57,15 @@ static void rs485_uart_cb(const struct device *dev, struct uart_event *evt,
         ctx->_rx_buf_idx ^= 1u;
         break;
 
-    case UART_RX_DISABLED:
+    case UART_RX_DISABLED: {
         gpio_reset(&ctx->rx_led);
-        uart_rx_enable(dev, ctx->_rx_buf[ctx->_rx_buf_idx], RS485_RX_BUF_SIZE,
-                       ctx->rx_idle_timeout_us);
+        int en_ret = uart_rx_enable(dev, ctx->_rx_buf[ctx->_rx_buf_idx], RS485_RX_BUF_SIZE,
+                                    ctx->rx_idle_timeout_us);
+        if (en_ret != 0) {
+            LOG_ERR("uart_rx_enable failed (%d) — RS485 RX stopped permanently", en_ret);
+        }
         break;
+    }
 
     case UART_TX_DONE:
         rs485_set_rx(&ctx->dir);
@@ -106,7 +113,7 @@ int rs485_init(rs485_ctx_t *ctx) {
         return ret;
     }
 
-    ret = uart_callback_set_(ctx->uart, rs485_uart_cb);
+    ret = uart_callback_register(ctx->uart, rs485_uart_cb, NULL);
     if (ret != 0) {
         LOG_ERR("RS485 UART callback set failed");
         return ret;
