@@ -4,19 +4,12 @@
 
 LOG_MODULE_REGISTER(can);
 
-void can_tx_callback(const struct device *dev, int error, void *user_data) {
-    char *sender = (char *) user_data;
-
-    if (error == -ENETUNREACH) {
-        LOG_ERR("CAN network unreachable, error: %d, sender: %s", error, sender);
-        return;
+static void can_tx_done(const struct device *dev, int error, void *user_data)
+{
+    ARG_UNUSED(dev); ARG_UNUSED(user_data);
+    if (error != 0 && error != -ENETUNREACH && error != -ENETDOWN) {
+        LOG_WRN("CAN TX error: %d", error);
     }
-
-    if (error != 0) {
-        LOG_ERR("Sending failed [%d] Sender: %s", error, sender);
-    }
-
-    LOG_INF("Send succes");
 }
 
 int can_send_(const struct device *can_dev, uint16_t id, uint8_t *data,
@@ -28,7 +21,7 @@ int can_send_(const struct device *can_dev, uint16_t id, uint8_t *data,
 
     memcpy(frame.data, data, data_len);
 
-    return can_send(can_dev, &frame, K_MSEC(100), NULL, NULL);
+    return can_send(can_dev, &frame, K_NO_WAIT, can_tx_done, NULL);
 }
 
 int can_send_float(const struct device *can_dev, uint16_t id, float value) {

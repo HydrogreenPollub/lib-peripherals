@@ -10,17 +10,11 @@ extern "C" {
 #include <zephyr/drivers/can.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/logging/log.h>
-#include "can_ids.h"
+#include "candef.h"
 #include <stdio.h>
 
-#define CAN_FILTER(_id, _mask, _flags)                                             \
-{ .id = (_id), .mask = _mask, .flags = _flags }
-
-#define CAN_FILTER_STANDARD(_id)                                                   \
+#define CAN_FILTER(_id)                                                        \
 { .id = (_id), .mask = CAN_STD_ID_MASK, .flags = 0U }
-
-#define CAN_FILTER_EXT(_id)                                                        \
-{ .id = (_id), .mask = CAN_EXT_ID_MASK, .flags = CAN_FRAME_IDE }
 
 int can_send_(const struct device *can_dev, uint16_t id, uint8_t *data, uint8_t data_len);
 
