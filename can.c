@@ -1,5 +1,6 @@
 #include "can.h"
 
+#include <errno.h>
 #include <string.h>
 
 LOG_MODULE_REGISTER(can);
@@ -8,7 +9,7 @@ static void can_tx_done(const struct device *dev, int error, void *user_data)
 {
     ARG_UNUSED(dev);
     ARG_UNUSED(user_data);
-    if (error != 0 && error != -ENETUNREACH && error != -ENETDOWN) {
+    if (error != 0 && error != -EAGAIN && error != -ENETUNREACH && error != -ENETDOWN) {
         LOG_WRN("CAN TX error: %d", error);
     }
 }
@@ -22,10 +23,11 @@ int can_send_(const struct device *can_dev, uint16_t id, uint8_t *data, uint8_t 
 
     memcpy(frame.data, data, data_len);
 
-    int ret = can_send(can_dev, &frame, K_MSEC(10), can_tx_done, NULL);
-    if (ret != 0 && ret != -ENETUNREACH && ret != -ENETDOWN) {
-        LOG_WRN("CAN send queue error: %d", ret);
+    int ret = can_send(can_dev, &frame, K_NO_WAIT, can_tx_done, NULL);
+    if (ret == -EAGAIN || ret == -ENETUNREACH || ret == -ENETDOWN) {
+        return 0;
     }
+
     return ret;
 }
 
