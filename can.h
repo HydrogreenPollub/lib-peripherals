@@ -16,6 +16,9 @@ extern "C" {
 #define CAN_FILTER(_id)                                                        \
 { .id = (_id), .mask = CAN_STD_ID_MASK, .flags = 0U }
 
+#define CAN_FILTER_EXT(_id)                                                    \
+{ .id = (_id), .mask = CAN_EXT_ID_MASK, .flags = CAN_FILTER_IDE }
+
 int can_send_(const struct device *can_dev, uint16_t id, uint8_t *data, uint8_t data_len);
 
 int can_init(const struct device *can_dev, uint32_t baudrate);
